@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=AI Quota
+Comment=Monitor Claude, OpenAI, OpenCode and OpenRouter quotas
+Type=Application
+Icon=io.github.cosmic-applet-ai-quota
+Exec=cosmic-applet-ai-quota
+Terminal=false
+StartupNotify=false
+Categories=System;Monitor;
+Keywords=AI;Quota;Claude;OpenAI;OpenCode;OpenRouter;COSMIC;
+NoDisplay=true
+X-CosmicApplet=true
