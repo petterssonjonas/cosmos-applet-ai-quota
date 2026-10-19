@@ -144,12 +144,12 @@ async fn reply(stream: &mut TcpStream, accepted: bool) {
     let (status, body) = if accepted {
         (
             "200 OK",
-            "Authorization received. Return to AI Quota to check secure sign-in completion. You can close this tab.",
+            "Authorization received. Return to Cosmos AI Quota to check secure sign-in completion. You can close this tab.",
         )
     } else {
         (
             "400 Bad Request",
-            "Invalid sign-in callback. Return to AI Quota and reconnect if necessary.",
+            "Invalid sign-in callback. Return to Cosmos AI Quota and reconnect if necessary.",
         )
     };
     let response = format!(
@@ -223,7 +223,7 @@ pub async fn openrouter() -> Result<String, ProviderError> {
         let mut authorize = Url::parse("https://openrouter.ai/auth").map_err(|_| error("Invalid official authorization endpoint."))?;
         authorize.query_pairs_mut().append_pair("callback_url", &callback)
             .append_pair("code_challenge", &challenge).append_pair("code_challenge_method", "S256")
-            .append_pair("state", &state).append_pair("key_label", "COSMIC AI Quota");
+            .append_pair("state", &state).append_pair("key_label", "Cosmos AI Quota");
         open_browser(&authorize).await?;
         let code = receive_code(&listener, &host, &state).await?;
         // Closing the listener before exchange rejects replay; verifier remains alive through exchange.

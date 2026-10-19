@@ -15,7 +15,7 @@ pub fn client() -> Result<Client, ProviderError> {
         .timeout(Duration::from_secs(20))
         .connect_timeout(Duration::from_secs(10))
         .redirect(reqwest::redirect::Policy::none())
-        .user_agent("cosmic-applet-ai-quota/0.1.0")
+        .user_agent("cosmos-applet-ai-quota/0.1.0")
         .build()
         .map_err(|_| ProviderError("Could not initialize HTTPS client".into()))
 }

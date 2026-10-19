@@ -370,7 +370,7 @@ impl cosmic::Application for AppModel {
     type Executor = cosmic::executor::Default;
     type Flags = ();
     type Message = Message;
-    const APP_ID: &'static str = "io.github.cosmic-applet-ai-quota";
+    const APP_ID: &'static str = "dev.jp.CosmosAppletAiQuota";
 
     fn core(&self) -> &cosmic::Core {
         &self.core
@@ -399,7 +399,7 @@ impl cosmic::Application for AppModel {
                 applet
                     .icon_button_from_handle(self.icon.clone())
                     .on_press(Message::TogglePopup),
-                "AI Quota",
+                "Cosmos AI Quota",
                 false,
                 Message::SurfaceAction,
                 self.core.main_window_id(),
@@ -413,7 +413,7 @@ impl cosmic::Application for AppModel {
         } else {
             let mut column = widget::column([]).width(Length::Fill).spacing(16).push(
                 widget::row([
-                    widget::text::title3("AI Quota").width(Length::Fill).into(),
+                    widget::text::title3("Cosmos AI Quota").width(Length::Fill).into(),
                     widget::button::text("Refresh")
                         .on_press(Message::Refresh)
                         .into(),

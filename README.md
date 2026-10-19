@@ -1,77 +1,122 @@
-# COSMIC AI Quota Applet
+# Cosmos AI Quota
 
-A native COSMIC panel applet for Claude, OpenAI, OpenCode Go, OpenCode Zen, and OpenRouter. The panel icon is a theme-aware **Q enclosing AI**; its tooltip is **AI Quota**.
+Show quota and balance data for Claude, OpenAI, OpenCode Go, OpenCode Zen, and OpenRouter in the COSMIC panel.
+Automatic refresh runs at most once every 15 minutes for each provider. Use **Refresh** for a manual update.
+Missing data shows **Unavailable**, not zero. The applet makes no inference requests and spends no tokens to measure usage.
+Cosmos is independent of System76. COSMIC libraries and protocols keep their upstream names.
 
-Click the icon to open the quota dropdown. Each provider has a **Connect** button. Automatic quota refresh is limited to once per **15 minutes per provider**, with a **Refresh** button for manual updates. A native animated spinner replaces the provider's last-updated timestamp while a refresh is running. Concurrent refreshes of the same provider are suppressed. Opening the dropdown does not bypass the automatic refresh interval.
+## Requirements
+
+Use Linux with a working COSMIC desktop session. Install the native build packages for your distribution:
+
+```sh
+# Fedora
+sudo dnf install gcc gcc-c++ cmake git pkgconf-pkg-config just desktop-file-utils expat-devel fontconfig-devel freetype-devel libxkbcommon-devel wayland-devel libsecret xdg-utils
+
+# Debian 13 or newer
+sudo apt update
+sudo apt install build-essential cmake git pkgconf just desktop-file-utils libexpat1-dev libfontconfig-dev libfreetype-dev libxkbcommon-dev libwayland-dev libsecret-tools xdg-utils
+
+# Arch Linux
+sudo pacman -Syu --needed base-devel cmake git pkgconf just desktop-file-utils expat fontconfig freetype2 libxkbcommon wayland libsecret xdg-utils
+```
+
+The lists follow [libcosmic's native requirements](https://github.com/pop-os/libcosmic#dependencies) and distribution package metadata.
+These are package examples, not a claim that all three distributions were tested.
+`secret-tool` comes from Fedora/Arch `libsecret` and Debian `libsecret-tools`.
+Run an unlocked Secret Service keyring in your desktop session, such as GNOME Keyring. Installing `secret-tool` alone does not provide one.
+Browser sign-in needs a browser. Claude and OpenAI sign-in also need their installed official CLI: Claude Code or Codex.
+
+Install current stable Rust with [rustup](https://rustup.rs), as your normal user. Distribution Rust packages can be too old.
+After rustup setup, open a new terminal and run:
+
+```sh
+rustup update stable
+rustup default stable
+```
 
 ## Build and install
 
-Requirements: a current Rust toolchain, the [libcosmic build dependencies](https://github.com/pop-os/libcosmic), `just`, `desktop-file-utils`, and a working Linux Secret Service keyring with `/usr/bin/secret-tool` (libsecret). Browser sign-in also needs `xdg-utils`; Claude and OpenAI sign-in require their official CLI.
+Use `sudo` only for package prerequisites above, never for these build or install commands:
 
 ```sh
-cargo build --release --locked
+git clone https://github.com/petterssonjonas/cosmos-applet-ai-quota
+cd cosmos-applet-ai-quota
+just build-release
 just install
 ```
 
-The default install prefix is `~/.local`. Installation writes the executable, desktop entry, and icon there; the installed desktop entry uses the absolute executable path, so the panel does not need `~/.local/bin` in its `PATH`.
+Build and install are separate. `just install` uses the existing release build.
+The executable goes to `~/.local/bin/cosmos-applet-ai-quota`. The desktop entry and icon go to `~/.local/share`.
+The desktop entry uses an absolute executable path. Keep `CARGO_TARGET_DIR` the same for build and install if you set it.
+In a development container, use your host-mapped normal user, not root.
 
-Add **AI Quota** in **COSMIC Settings → Desktop → Panel → Configure panel applets**. The desktop ID is `io.github.cosmic-applet-ai-quota`. `just install` itself does not change the panel layout. To load an updated executable, remove and re-add the applet.
+Open **COSMIC Settings → Desktop → Panel → Configure panel applets**. Add **Cosmos AI Quota** (`dev.jp.CosmosAppletAiQuota`).
+Remove and add the applet again after an upgrade. Installation does not change the panel layout.
 
-```sh
-cargo test --release --locked
-cargo clippy --release --all-targets --locked -- -D warnings
-```
+## Connect and use
 
-## Provider data
+Nothing connects automatically. Open the dropdown, select **Connect**, then select a source:
 
-| Provider | Connection methods | Data, when returned by the provider |
-| --- | --- | --- |
-| Claude | Existing Claude/OpenCode OAuth login, isolated official CLI browser sign-in, or explicitly supplied dashboard cookie | Plan, session and weekly percentage remaining, model-scoped weekly limits including Fable, reset timestamps, available banked resets with individual expiry, extra-usage allowance and credits |
-| OpenAI | Existing Codex/OpenCode OAuth login, isolated official CLI browser sign-in, or API key | Subscription plan, weekly and actual five-hour windows when present, banked resets with individual expiry, Codex credits |
-| OpenCode Go | API key or existing OpenCode credentials | Rolling five-hour, weekly, and monthly quota windows returned by the Go usage API |
-| OpenCode Zen | Console service API key, legacy API key, existing OpenCode credentials, or explicitly supplied Console cookie | Prepaid Console balance; available spending information is kept separate from quota |
-| OpenRouter | API key, existing OpenCode credentials, or browser PKCE authorization | Key budget and remaining amount, reported spending windows, available account credits |
+- Claude: existing Claude/OpenCode OAuth login, official CLI browser sign-in, or a supplied dashboard cookie.
+- OpenAI: existing Codex/OpenCode OAuth login, official CLI browser sign-in, or an API key.
+- OpenCode Go: API key or existing OpenCode credentials.
+- OpenCode Zen: Console service key, legacy key, existing OpenCode credentials, or a supplied Console cookie.
+- OpenRouter: API key, existing OpenCode credentials, or browser PKCE authorization.
 
-Missing data is **Unavailable**, never an invented zero. Zero is shown only when the provider reports exhaustion, no resets, or a zero balance. Expired banked resets are excluded. Reset/expiry timestamps use local time and include the UTC offset. Provider plan identifiers are displayed as reported rather than guessed from a billing tier.
+Existing login files are read-only. Sources are `$CODEX_HOME/auth.json` or `~/.codex/auth.json`,
+`$CLAUDE_CONFIG_DIR/.credentials.json` or `~/.claude/.credentials.json`, and
+`$XDG_DATA_HOME/opencode/auth.json` or `~/.local/share/opencode/auth.json`.
+For the selected OpenCode source, `OPENCODE_AUTH_CONTENT` takes precedence.
+A Codex login stored only in Codex's own keyring cannot be imported from a file.
+The applet does not scrape browser cookies or other desktop credential stores.
 
-### Important API distinctions
+App-owned keys, cookies, and access tokens use Secret Service. There is no plaintext fallback.
+Source preferences use `~/.config/cosmos-applet-ai-quota` (or the corresponding `$XDG_CONFIG_HOME` directory).
+Browser sign-in uses isolated temporary CLI configuration and removes temporary credentials after import. It times out after five minutes.
+Existing credentials need renewal by their owning CLI. App-owned browser tokens need another sign-in when they expire; refresh tokens are not retained.
+If the CLI needs terminal input, sign in from a terminal and select the existing login instead.
 
-- **OpenAI API billing is not ChatGPT/Codex subscription quota.** An API key can be validated, but it cannot reveal a ChatGPT plan's weekly/five-hour quota or reliably expose an API prepaid balance through a supported public endpoint. Use Codex/ChatGPT OAuth for subscription usage.
-- OpenAI window names come from their reported duration, not an assumed plan mapping. Five-hour windows are not fabricated for plans that do not report one.
-- Claude OAuth plan information may come from the selected local credential and is labelled as such. Some credit/reset fields are available only through the dashboard session or particular account capabilities. Extra-usage spending allowance is not presented as prepaid cash.
-- **OpenCode Console service keys need All permissions for billing.** Inference-only keys and legacy Zen keys may validate without exposing a balance. An explicitly supplied Console cookie is an alternative. Multiple workspaces require an explicit workspace ID; no workspace is silently chosen.
-- OpenRouter key limits are not the same as the account's prepaid balance. Its account-credits endpoint may require additional permissions; key usage can still be shown if that request is denied.
-- Some subscription/dashboard endpoints are private APIs and may change. The applet makes no inference calls and does not spend tokens to measure usage. A 15-minute interval reduces request frequency; it is not a guarantee against provider restrictions. Errors remain visible, with no rapid automatic retry loop.
+**Disconnect** removes only this applet's provider credential. If deletion fails, unlock the keyring and retry.
+It does not log out another application or revoke a provider-side key. Revoke keys in the provider dashboard when needed.
 
-## Credentials and privacy
+### Limits
 
-Nothing is connected automatically on first launch. Choose **Connect → Use existing CLI login**, **Use existing OpenCode credentials**, **Sign in with browser**, or enter the appropriate API key.
+- OpenAI API keys do not expose ChatGPT/Codex subscription quota or a reliable API prepaid balance. Use subscription OAuth for subscription usage.
+- Claude credit and reset fields depend on the selected source and account. Extra-usage allowance is not prepaid cash.
+- OpenCode Console billing needs a service key with **All** permissions, or a supplied Console cookie. Select a workspace ID when multiple workspaces exist.
+- OpenRouter key limits and account credits are different. Account credits can require additional permissions.
+- Some dashboard APIs are private and can change. Refresh intervals do not guarantee that a provider permits access.
+- Provider access remains account-dependent. Not every provider and browser authorization flow has live-account validation.
 
-Existing credentials are read-only and re-read on each refresh:
+## Upgrade from cosmic-applet-ai-quota
 
-- Codex: `$CODEX_HOME/auth.json`, otherwise `~/.codex/auth.json`.
-- Claude: `$CLAUDE_CONFIG_DIR/.credentials.json`, otherwise `~/.claude/.credentials.json`.
-- OpenCode: `$XDG_DATA_HOME/opencode/auth.json`, otherwise `~/.local/share/opencode/auth.json`; an explicit `OPENCODE_AUTH_CONTENT` value takes precedence for that selected source.
+Stop the old applet and remove its **AI Quota** panel entry before migration. Do not start the new applet yet.
+Run `just migrate` to copy only source preferences from `~/.config/cosmic-applet-ai-quota` to `~/.config/cosmos-applet-ai-quota`.
+The paths follow `$XDG_CONFIG_HOME` when set. Migration keeps the source, refuses an existing destination, and rejects symlinks or untrusted paths.
+Unexpected files, including `.login-*` directories, stop migration. Inspect these privately before retrying; they can contain credentials.
 
-The applet does not scrape browser cookies or credential stores belonging to desktop applications. Native/OpenCode OpenAI credential import expects subscription OAuth; enter API keys using the API-key field instead. A Codex login stored only in Codex's own keyring is not imported from a file: use an app-specific browser login or another supported source.
+**Reconnect every app-managed provider. Credentials do not migrate between keyring namespaces.**
+Old items use `application=cosmic-applet-ai-quota`; new items use `application=cosmos-applet-ai-quota`, with the same `provider` attributes.
+Old items remain untouched. A migrated `keyring` selection shows a reconnect error until you reconnect.
+Migration never exports or copies legacy credentials. New **Disconnect** affects only the new namespace.
+Keep old items as backups, or remove them with your keyring manager after the new connection works.
+Read-only CLI/OpenCode sources continue to use their original files. Disconnected sources stay disconnected.
 
-New app-owned API keys, session cookies, and OAuth access credentials are stored in **Secret Service**, never as plaintext configuration. There is no insecure fallback if the keyring is unavailable. Source-selection metadata contains no token and uses private directories/files under `$XDG_CONFIG_HOME/cosmic-applet-ai-quota` (normally `~/.config/cosmic-applet-ai-quota`).
+Build, install, then add the new panel entry. Remove the old executable, desktop entry, and icon separately under the old prefix:
+`bin/cosmic-applet-ai-quota`, `share/applications/io.github.cosmic-applet-ai-quota.desktop`, and
+`share/icons/hicolor/scalable/apps/io.github.cosmic-applet-ai-quota.svg`.
 
-Claude/OpenAI browser sign-in runs the installed official CLI in an isolated temporary home/configuration. It does not replace the CLI account you already use. Temporary credential files are removed after import. OpenRouter uses a bounded loopback callback with state verification and S256 PKCE. Browser sign-in times out after five minutes.
+## Uninstall
 
-**Token renewal:** borrowed credentials are refreshed by their owning CLI, not this applet. App-owned browser access tokens currently require another browser sign-in when they expire; refresh tokens are not retained. If an official CLI cannot finish its browser flow without terminal input, sign in from a terminal and select that existing login instead.
+Disconnect app-managed providers first if you want to remove their stored credentials.
+Remove the applet from the panel, then run `just uninstall` from this source directory, without `sudo`.
+Uninstall keeps preferences and keyring items. It does not remove legacy files.
 
-**Disconnect** persists an opt-out and removes this applet's provider credential from Secret Service. It never logs out or edits another application's login. If the keyring is locked or deletion fails, unlock it and retry Disconnect; cleanup remains retryable. Local deletion does not revoke a provider-side API key—revoke that separately in the provider dashboard if required.
+## License and references
 
-## Verification and API references
-
-Release build, regression tests, strict Clippy, desktop-entry validation, and native COSMIC panel/popup checks were exercised locally. Secret Service storage/lookup/deletion was exercised with a temporary synthetic secret. A live OpenAI quota read using existing Codex credentials succeeded. The existing OpenCode Go key received HTTP 403 from its usage endpoint; the applet correctly reports that denial rather than inventing usage. Claude, Zen, and OpenRouter were not live-authenticated during these checks. Interactive provider browser authorization still requires the account owner to complete sign-in.
-
-UI loading/form checks use a temporary, network-free harness; no smoke harness or sample quota data is shipped in the applet.
-
-Implementation references:
-
-- [COSMIC applet template](https://github.com/pop-os/cosmic-applet-template)
-- [CodexBar provider integrations](https://github.com/steipete/CodexBar)
-- [OpenCode Console API](https://github.com/anomalyco/opencode/blob/dev/services/www/src/docs/content/console/api/index.mdx)
-- [OpenRouter OAuth PKCE](https://openrouter.ai/docs/guides/overview/auth/oauth)
+Code: MPL-2.0, as declared in `Cargo.toml`.
+Built with [libcosmic](https://github.com/pop-os/libcosmic) and the [COSMIC applet template](https://github.com/pop-os/cosmic-applet-template).
+Provider references include [CodexBar](https://github.com/steipete/CodexBar),
+[OpenCode Console](https://github.com/anomalyco/opencode/blob/dev/services/www/src/docs/content/console/api/index.mdx),
+and [OpenRouter PKCE](https://openrouter.ai/docs/guides/overview/auth/oauth).

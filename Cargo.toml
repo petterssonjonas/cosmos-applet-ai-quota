@@ -1,9 +1,9 @@
 [package]
-name = "cosmic-applet-ai-quota"
+name = "cosmos-applet-ai-quota"
 version = "0.1.0"
 edition = "2024"
 license = "MPL-2.0"
-description = "COSMIC panel applet for AI subscription quotas and credits"
+description = "Cosmos AI Quota, an independent panel applet for the COSMIC desktop"
 
 [dependencies]
 libcosmic = { git = "https://github.com/pop-os/libcosmic.git", default-features = false, features = ["applet", "a11y", "dbus-config"] }

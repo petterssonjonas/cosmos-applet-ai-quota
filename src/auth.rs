@@ -19,7 +19,9 @@ use tokio::{
     time::timeout,
 };
 
-const APP: &str = "cosmic-applet-ai-quota";
+// Config and Secret Service use only this identity. Legacy keyring items stay
+// untouched; migrating source preferences requires reconnecting app-owned secrets.
+const APP: &str = "cosmos-applet-ai-quota";
 const MAX_CREDENTIAL_BYTES: usize = 1024 * 1024;
 const STORE_ERROR: &str = "Secret Service is unavailable or locked. Install libsecret-tools and unlock your desktop keyring, then reconnect. Plaintext fallback is disabled.";
 static WRITERS: [Mutex<()>; 5] = [const { Mutex::const_new(()) }; 5];
@@ -208,7 +210,7 @@ async fn secret_tool(
         let mut command = Command::new("/usr/bin/secret-tool");
         command.arg(operation);
         if operation == "store" {
-            command.args(["--label", "COSMIC AI Quota credential"]);
+            command.args(["--label", "Cosmos AI Quota credential"]);
         }
         command
             .args(["application", APP, "provider", provider.id()])

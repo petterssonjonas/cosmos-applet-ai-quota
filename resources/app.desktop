@@ -1,9 +1,9 @@
 [Desktop Entry]
-Name=AI Quota
+Name=Cosmos AI Quota
 Comment=Monitor Claude, OpenAI, OpenCode and OpenRouter quotas
 Type=Application
-Icon=io.github.cosmic-applet-ai-quota
-Exec=cosmic-applet-ai-quota
+Icon=dev.jp.CosmosAppletAiQuota
+Exec=cosmos-applet-ai-quota
 Terminal=false
 StartupNotify=false
 Categories=System;Monitor;
